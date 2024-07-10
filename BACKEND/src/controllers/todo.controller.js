@@ -19,7 +19,7 @@ const addnewTodo = asyncHandler(async(req,res)=>{
   const todo = await Todo.create({
     title,
     description,
-    user: userId,
+    userId: userId,
   })
 
   const user =await User.findById(userId)
@@ -27,12 +27,12 @@ const addnewTodo = asyncHandler(async(req,res)=>{
     throw new ApiError(400,"user not found")
   }
   const savedtodo = await todo.save();
-  user.todos.push(savedtodo._id)
+  user.todos.push(savedtodo)
   await user.save();
 
-  res
+  return res
   .status(200)
-  .json(new ApiResponse(200,"todo added successfully"))
+  .json(new ApiResponse(200,savedtodo,"todo added successfully"))
 })
 
 const updateTodo = asyncHandler(async(req,res)=>{
@@ -41,25 +41,27 @@ const updateTodo = asyncHandler(async(req,res)=>{
     const { title, description } = req.body;
     const userId = req.user._id;
 
-    const todo = await Todo.findOneAndUpdate(
-        { _id: id, user: userId }, //  This is the condition object. It specifies that the document to be updated must have an _id matching id and a user field matching userId
-        { title, description },
-        { new: true, runValidators: true }  // new: true: Ensures that the method returns the updated document, not the original one.
-        // runValidators: true: Ensures that the update operation runs the validation rules defined in the Mongoose schema.
+    const todo = await Todo.findOne(
+        { _id: id, userId: userId }, //  This is the condition object. It specifies that the document to be updated must have an _id matching id and a userId field matching userId
     );
 
     if (!todo) {
         throw new ApiError(404, 'Todo not found');
     }
 
-    res.status(200).json(new ApiResponse(200, todo, 'Todo updated successfully'));
+    if(title) todo.title = title
+    if(description) todo.description = description
+
+    await todo.save();
+
+    return res.status(200).json(new ApiResponse(200, todo, 'Todo updated successfully'));
 })
 
 const deleteTodo = asyncHandler(async(req,res)=>{
     const id  = req.params.id;
-    const user = req.user;
+    const userId = req.user._id;
 
-    const todo = await Todo.findOne({ _id: id, user: user._id });
+    const todo = await Todo.findOne({ _id: id, userId: userId });
     
     if (!todo) {
         throw new ApiError(404, 'Todo not found');
@@ -67,13 +69,16 @@ const deleteTodo = asyncHandler(async(req,res)=>{
 
     // Remove the todo from the user's todos array
     // await User.findByIdAndUpdate(user._id, { $pull: { todos: id } });
-    await Todo.deleteOne({ _id: id, userId: user._id });
+    await Todo.deleteOne({ _id: id, userId: userId });
+
+    return res.json("note deleted successfully")
+
 })
 
 const getallTodo = asyncHandler(async(req,res)=>{
     const userId = req.user._id;
-    const alltodos = await Todo.find({user:userId})
-    res.status(200).json(
+    const alltodos = await Todo.find({userId:userId})
+    return res.status(200).json(
         new ApiResponse(200,alltodos,"all todos fetched")
     )
 })

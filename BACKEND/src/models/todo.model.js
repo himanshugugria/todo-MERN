@@ -8,9 +8,9 @@ const todoSchema = new mongoose.Schema({
     description:{
         type: String,
     },
-    createdBy:{
-        type: mongoose.Schema.Types.ObjectId,
-        ref:"User",
+    userId:{
+        type:String,
+        required: true,
     },
     createdAt:{
         type: Date,
