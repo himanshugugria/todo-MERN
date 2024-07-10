@@ -1,6 +1,7 @@
-import axios from 'axios'
 import React, { useState } from 'react'
-import { Link,NavLink } from 'react-router-dom'
+import { Link,NavLink, useNavigate} from 'react-router-dom'
+import axiosInstance from '../utils/AxioInstance'
+
 function Register() {
 
     const [name,setName]= useState("")
@@ -8,6 +9,8 @@ function Register() {
     const [password,setPassword]= useState("")
     const [username,setUsername]= useState("")
     const [error,setError] = useState(null);    // initial value of error to be null
+    const navigate = useNavigate();
+
 
     const handlesignup = async(e)=>{
         e.preventDefault();
@@ -27,8 +30,31 @@ function Register() {
             setError("please enter your email")
             return;
         }
+        setError("")
 
         // API call
+        try {
+            const response =await axiosInstance.post("/users/register",{
+                email:email,
+                password: password,
+                username: username,
+                fullName: name,
+            })
+
+            // console.log(response);
+
+            if(response.data && response.data.data && response.data.data.accessToken){
+                localStorage.setItem("token",response.data.data.accessToken)
+                console.log(response.data.data.accessToken);
+                navigate("/dashboard")
+            }
+            else{
+                console.log("no access token in response")
+            }
+            
+        } catch (error) {
+            setError(error.response?.data?.message || "error occured")
+        }
         
     }
 

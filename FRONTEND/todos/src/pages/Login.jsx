@@ -1,5 +1,6 @@
-import React from 'react'
-import { Link,NavLink } from 'react-router-dom'
+import React,{useState} from 'react'
+import { Link,NavLink, useNavigate } from 'react-router-dom'
+import axiosInstance from '../utils/AxioInstance'
 
 
 function Login() {
@@ -7,6 +8,8 @@ function Login() {
     const [password,setPassword]= useState("")
     const [username,setUsername]= useState("")
     const [error,setError] = useState(null);    // initial value of error to be null
+    const navigate = useNavigate();
+
 
     const handlesignin = async(e)=>{
         e.preventDefault();
@@ -22,7 +25,28 @@ function Login() {
             setError("please enter your email")
             return;
         }
+        setError("");
 
+
+        // API call
+        try {
+            const response =await axiosInstance.post("/users/login",{
+                email:email,
+                password: password,
+                username: username,
+            })
+
+            console.log(response);
+
+            if(response.data && response.data.data.accessToken){
+                localStorage.setItem("token",response.data.data.accessToken)
+                console.log(response.data.data.accessToken);
+                navigate("/dashboard")
+            }
+            
+        } catch (error) {
+            setError(error.response?.data?.message || "error occured")
+        }
     }
 
   return (
@@ -56,6 +80,8 @@ function Login() {
                 class="flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
                 type="email"
                 placeholder="Email"
+                value={email}
+                onChange={(e)=>setEmail(e.target.value)}
               />
             </div>
           </div>
@@ -71,6 +97,8 @@ function Login() {
                 class="flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
                 type="password"
                 placeholder="username"
+                value={username}
+                onChange={(e)=>setUsername(e.target.value)}
               />
             </div>
           </div>
@@ -86,9 +114,12 @@ function Login() {
                 class="flex h-10 w-full rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
                 type="password"
                 placeholder="Password"
+                value={password}
+                onChange={(e)=>setPassword(e.target.value)}
               />
             </div>
           </div>
+          {error && <p className='text-red-600 text-xs'>{error}</p>}
           <div>
             <button
               type="submit"

@@ -6,6 +6,19 @@ import {ApiError} from '../utils/ApiError.js'
 import {ApiResponse} from '../utils/ApiResponse.js'
 import { stringify } from 'flatted';  // Import flatted
 
+
+const generateAccessandRefreshtoken = async(userId)=>{
+    const user =await User.findById(userId)
+
+    const accessToken = user.createAccessToken()
+    const refreshToken = user.createRefreshToken()
+    user.refreshToken = refreshToken
+
+    await user.save({validateBeforeSave: false})
+
+    return {accessToken,refreshToken}
+}
+
 const userRegister = asyncHandler(async(req,res)=>{
     // res.status(200).json({
     //     message:"okk",
@@ -37,6 +50,8 @@ const userRegister = asyncHandler(async(req,res)=>{
     const createdUser = User.findById(user._id).select(
         "-password"
     )
+    const {accessToken,refreshToken}=await generateAccessandRefreshtoken(user._id);
+
     if(!createdUser){
         throw new ApiError(500,"user not created!!")
     }
@@ -44,21 +59,10 @@ const userRegister = asyncHandler(async(req,res)=>{
     const safeUser = JSON.parse(stringify(createdUser))
 
     return res.status(200).json(
-         new ApiResponse(200,safeUser,"user created successfully")
+         new ApiResponse(200,{user:safeUser,accessToken},"user created successfully")
     )
 })
 
-const generateAccessandRefreshtoken = async(userId)=>{
-    const user =await User.findById(userId)
-
-    const accessToken = user.createAccessToken()
-    const refreshToken = user.createRefreshToken()
-    user.refreshToken = refreshToken
-
-    await user.save({validateBeforeSave: false})
-
-    return {accessToken,refreshToken}
-}
 
 const userlogin = asyncHandler(async(req,res)=>{
     const {username,email,password} = req.body
